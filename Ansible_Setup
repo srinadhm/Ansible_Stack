@@ -1,0 +1,756 @@
+1.how to check java is already there or not what is the java home path
+2.install java only when it is not there
+3.how to run tomcat as a service using ansible playbook
+4.how to install postgresql using ansible playbook
+5.how to do backup and restore of postgresql using ansible playbook
+how to install os depended task?
+   node1: RHEL
+   node2: Ubuntu
+
+
+2) how to create a user using ansible?
+3) how to change folder permissions or ownership using ansible?
+4) how to create a file using jinja template using ansible?
+   how to create tomcat as a service and run tomcat service using ansible?
+5) how to install sonarqube using ansible?
+6) how to download artifacts from nexus using ansible?[assume already we had war in nexus]
+7) how to install multiple packages at once using ansible?
+8) how to set environment variables using ansible?
+
+
+what is ansible
+what is configuration management
+different tools for configuration management
+pull based v/s push based
+
+
+how to install
+what is Host inventory inventory file v/s dynamic inventory 
+Ansible modules
+understanding yaml
+Ansible playbook
+Different ansible modules
+Ansible roles 
+Ansible Galaxy
+Ansible Tower
+
+ansible --- installation ---- 
+ansible architecture 
+working of ansible 
+adhoc commands 
+copy v/s synchronize 
+modules playbook --- installation java maven tomcat 
+ansible inventory  dynamic inventory
+ansible valut 
+ansible users/roles 
+ansible tower 
+ansible galaxy
+ansible variables 
+ansible facts custom facts 
+
+###########################################################
+
+Ansible is an it automation tool which can deploy software, configure system and orchestrate more advanced task
+
+Deploy software: deploy war file to tomcat using ansible
+Configure system: we can install java maven git jenkins tomcat sonarqube nexus docker kubernetes kafka terraform mysql postgresql grafana promotheus using ansible 
+Advanced task : download the jar/war file from nexus and copy jar file to server and run the jar file 
+
+Configuration management : 
+
+info includes exact versions and updating network address for all hardware devices
+ex: if we want to install tomcat or web server in all nodes it is not good to go to each and every server , install it manually ---- to avoid this we have to go for configuration management tools like ansible puppet chef salt stack
+
+
+how ansible works
+Controlling machine 
+master or control-node 
+
+multiple nodes 
+node-1 
+node-2
+node-3
+
+from master machine or controlling machine it will connect to the node and pushed programs called modules
+by using ssh
+
+then it will look for host inventory file and remove the code which is already executed
+
+
+Practical scenario 
+
+create 3 ec2 instances 
+ec2 server1--- controlling machine 
+ec2 server2,ec2 server3 ---- nodes 
+connect to instances and change the hostnames to avoid confusion
+
+
+
+hostnamectl set-hostname master-machine
+hostnamectl set-hostname node_machine2
+hostnamectl set-hostname node_machine1
+
+
+18.222.146.47 --- master machine
+172.31.83.20 --- node_machine1
+172.31.81.84 --- node_machine2
+
+Ansible setup 
+----------------
+1.First we will setup ssh connection between 3 servers .Generate ssh key on  master machine (ssh-keygen) public and private keys will be generated in /root/.ssh location) 
+
+[root@master-machine ~]# cd /root/.ssh/
+[root@master-machine .ssh]# ll
+total 12
+-rw------- 1 root root  549 Nov 26 02:08 authorized_keys
+-rw------- 1 root root 1675 Nov 26 02:17 id_rsa
+-rw-r--r-- 1 root root  401 Nov 26 02:17 id_rsa.pub
+
+id_rsa ---- private keys 
+id_rsa.pub ---- public keys 
+if we want to connect from one machine to another machine without prompting for password we need to copy public keys (id_rsa.pub) in node machine or server2 in /root/.ssh/authorized_keys location 
+
+
+
+2.copy ssh key on all the node machines 
+node_machine1 ----  172.31.83.20 
+node_machine2 ----  172.31.81.84
+
+[root@master-machine .ssh]# cat id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDG+g6H73zV7OF4KCkAs4HM3+lFfqRORGClbbcj1ZwG1dWZCp1T9jwJFrUYeL4l5TDzJaG2DD2r3ciQa3cplQUDbm7IKz10haH1plGKrS/wwLhrIkFcL5TYdz8fQ18QHz4HwuNoGV2f6YQ+RigK3u4UozGfs11ZeLD+2zvmH3USuL0GqRCpoMVapo2OB7tDoRUfuzt/Tjpb/wU7xydeppsBgjfyT8x6XhkAfolwPJqfWfpXbZzKAk6uxgWji9f2EbNqEe7jv48wIMUuzr92mkCjgYq0d+DrydetyXtjm7iPMQdfasFJH4vtwYHEm1nG9Gp67FXtRyWZ+ywGOC7vUViB root@master-machine
+
+[root@node_machine1 ~]# cd /root/.ssh
+[root@node_machine1 .ssh]# ll
+total 4
+-rw------- 1 root root 549 Nov 26 02:08 authorized_keys
+[root@node_machine1 .ssh]# vi authorized_keys
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDG+g6H73zV7OF4KCkAs4HM3+lFfqRORGClbbcj1ZwG1dWZCp1T9jwJFrUYeL4l5TDzJaG2DD2r3ciQa3cplQUDbm7IKz10haH1plGKrS/wwLhrIkFcL5TYdz8fQ18QHz4HwuNoGV2f6YQ+RigK3u4UozGfs11ZeLD+2zvmH3USuL0GqRCpoMVapo2OB7tDoRUfuzt/Tjpb/wU7xydeppsBgjfyT8x6XhkAfolwPJqfWfpXbZzKAk6uxgWji9f2EbNqEe7jv48wIMUuzr92mkCjgYq0d+DrydetyXtjm7iPMQdfasFJH4vtwYHEm1nG9Gp67FXtRyWZ+ywGOC7vUViB root@master-machine
+
+[root@node_machine2 ~]# cd /root/.ssh
+[root@node_machine2 .ssh]# ll
+total 4
+-rw------- 1 root root 549 Nov 26 02:09 authorized_keys
+[root@node_machine2 .ssh]# vi authorized_keys
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDG+g6H73zV7OF4KCkAs4HM3+lFfqRORGClbbcj1ZwG1dWZCp1T9jwJFrUYeL4l5TDzJaG2DD2r3ciQa3cplQUDbm7IKz10haH1plGKrS/wwLhrIkFcL5TYdz8fQ18QHz4HwuNoGV2f6YQ+RigK3u4UozGfs11ZeLD+2zvmH3USuL0GqRCpoMVapo2OB7tDoRUfuzt/Tjpb/wU7xydeppsBgjfyT8x6XhkAfolwPJqfWfpXbZzKAk6uxgWji9f2EbNqEe7jv48wIMUuzr92mkCjgYq0d+DrydetyXtjm7iPMQdfasFJH4vtwYHEm1nG9Gp67FXtRyWZ+ywGOC7vUViB root@master-machine
+
+save changes and exit.
+
+3.after copying keys test the ssh connection from master machine
+
+ssh username@publicip or private ip 
+
+ssh root@172.31.32.201  --- node_machine1
+ssh root@172.31.45.218  --- node_machine2
+ssh root@172.31.83.20   ---- node_machine1
+ssh root@172.31.81.84   ----- node_machine2
+
+
+Once the connectio is establishes between 3 machines master and node, then we can do Ansible setup 
+
+4.We need to install ansible on the master machine no need to install on nodes, Install python on both master and node machines 
+
+yum install python -y
+
+amazon-linux-extras install ansible2 -y
+ 
+ansible --version
+ansible 2.9.20
+  config file = /etc/ansible/ansible.cfg
+  configured module search path = [u'/root/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python2.7/site-packages/ansible
+  executable location = /bin/ansible
+  python version = 2.7.18 (default, Jun 10 2021, 00:11:02) [GCC 7.3.1 20180712 (Red Hat 7.3.1-13)]
+
+5.made an node group entry in /etc/ansible/hosts in nothing but inventory file we need to location node machines ip address with valid group name
+
+
+[Workernodes]
+172.31.83.20
+172.31.81.84
+
+6.After adding group in ansible default inventory file check the connectivity on all node machines with your group name.
+
+This command will use Ansible’s built-in ping module to run a connectivity test on all nodes from your default inventory, 
+connecting as root. The ping module will test:
+
+if hosts are accessible;
+if you have valid SSH credentials;
+if hosts are able to run Ansible modules using Python.
+
+
+[root@master ~]# ansible -m ping Workernodes
+[WARNING]: Platform linux on host 172.31.89.255 is using the discovered Python interpreter at /usr/bin/python, but future installation of another Python interpreter
+could change this. See https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.89.255 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+
+
+--------------------------------
+
+
+Practical examples
+
+1.Install java on node_machine1 and node_machine2
+2.Install java on master machine
+
+every task or writing programs to install software are called modules 
+
+to install java we need to find the particular or specific module
+
+linux command to install java on centos/redhat/amazon linux
+yum install java-1.8.0-openjdk java-1.8.0-openjdk-devel -y
+
+similar to that we need to get the yum module in ansible
+name: install the latest version of Apache
+  yum:
+    name: httpd
+    state: latest
+
+- name: remove the Apache package
+  yum:
+    name: httpd
+    state: absent
+
+- name: install the latest version of Apache from the testing repo
+  yum:
+    name: httpd
+    enablerepo: testing
+    state: present
+	
+state : present install specific or current version of software 
+state : absent remove or uninstall software
+state : latest install latest version of software
+
+name : httpd ( package name for http software) 
+
+we can write ansile in 
+1.command line (adhoc commands)
+2.playbook ( set of instructions we will write in yaml file)
+
+ansible -m yum -a'name=java-1.8.0-openjdk-devel state=present' localhost
+
+-m ---> module 
+
+yum ---> module name i.e yum 
+
+-a ---> arguments 
+
+name= ----> package name 
+
+state= ----> latest or present
+
+If we want to install on master machine we can mention 'localhost'
+
+If we want to install on node machines made an entry in /etc/ansible/hosts with group name. 
+
+here the group name will be Workernodes
+
+ 
+ansible -m yum -a'name=java-1.8.0-openjdk-devel state=present' localhost   ( if we want to install on master machine it will be local host )
+
+ansible -m yum -a'name=java-1.8.0-openjdk-devel state=present' Workernodes ( groupname is Workernodes )   ( it will install java on node_machine1 and node_machine2 if we configure ips in host inventory file by grouping)
+java -version
+
+openjdk version "1.8.0_282"
+OpenJDK Runtime Environment (build 1.8.0_282-b08)
+OpenJDK 64-Bit Server VM (build 25.282-b08, mixed mode)
+
+ansible adhoc command to install git
+
+ansible -m yum -a'name=git  state=present' Workernodes
+ 
+ansible -m yum -a'name=git  state=absent' Workernodes   
+
+Adhoc Commands
+-----------------
+What is Ansible ad hoc commands
+ad hoc in Latin means something done for a very precise and particular purpose.  As the word suggests, ansible ad hoc commands are written for a very particular task. Some of the ad hoc scenarios are given below.
+
+To run an ad hoc command, the command must be framed or have the following syntax.
+
+ansible <host-pattern> [options]
+for example. the command should be written as follows.
+
+ansible appserverhostgroup -m <modulename> -a <arguments to the module>
+A single ansible ad hoc command can have multiple options. -m and -a are one amongst them and widely used.
+
+
+
+1.we are going to test the remote nodes or hosts using ping command 
+
+ansible  -m ping Workernodes 
+
+[root@master-machine ~]# ansible Workernodes -m ping  --user=root
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+
+
+2.ansible ad hoc command to check uptime : we are going to know the uptime of the hosts. Ansible provides two major modules to run the command over the host group or on the remote server.
+
+ansible localhost  -m shell -a uptime
+
+ansible Workernodes  -m shell -a uptime 
+
+ansible  Workernodes -m command -a uptime
+
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | CHANGED | rc=0 >>
+ 03:06:47 up 57 min,  2 users,  load average: 0.00, 0.00, 0.00
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | CHANGED | rc=0 >>
+ 03:06:47 up 58 min,  2 users,  load average: 0.08, 0.02, 0.01
+
+
+ansible Workernodes -a uptime
+
+3.How to check the free memory or memory usage of  hosts using ansible ad hoc command 
+
+The following ansible ad hoc command would help you get the free memory of all the hosts in the host group named Workernodes.As you could see we are running the free -m command on the remote hosts and collecting the information
+
+
+ansible Workernodes -a "free -m" 
+
+[root@master-machine ~]# ansible Workernodes -a "free -m"
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | CHANGED | rc=0 >>
+              total        used        free      shared  buff/cache   available
+Mem:           3921         121        3079           0         720        3591
+Swap:             0           0           0
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | CHANGED | rc=0 >>
+              total        used        free      shared  buff/cache   available
+Mem:           3921         122        3079           0         719        3590
+Swap:             0           0           0
+
+4.ansible ad hoc command to get physical memory allocated to the host
+
+To accomplish this example we are going to use two commands together so we must opt to shell module.
+
+ansible Workernodes -m shell -a "cat /proc/meminfo|head -2" 
+
+[root@master-machine ~]# ansible Workernodes -m shell -a "cat /proc/meminfo|head -2"
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | CHANGED | rc=0 >>
+MemTotal:        4015212 kB
+MemFree:         3153640 kB
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | CHANGED | rc=0 >>
+MemTotal:        4015212 kB
+MemFree:         3153380 kB
+[root@master-machine ~]# ansible Workernodes -m command  -a "cat /proc/meminfo|head -2"
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | FAILED | rc=1 >>
+cat: invalid option -- '2'
+Try 'cat --help' for more information.non-zero return code
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | FAILED | rc=1 >>
+cat: invalid option -- '2'
+Try 'cat --help' for more information.non-zero return code
+
+Ansible command vs shell module
+Both ansible shell and command modules can be used to run SHELL commands on the nodes. but one difference is that command module does not support piping the output to another command, In other words, it will support the only command whereas shell module support complicated pipes and every shell command you use day to day
+
+The UNIX Command	  Supported in command module	Supported in Shell module
+cat /etc/passwd	                YES	                                  YES
+cat /etc/passwd|grep “^saravak”	NO ( Since it has Pipe)	              YES
+
+Piping wont support for ansible command module where as shell can support for piping 
+
+5.Create a unix user group with ansible ad hoc command 
+
+Here we are creating a user name group named weblogic using the ansible group module, 
+the same task can be reversed to delete the group if you change the state to absent.
+
+$ ansible Workernodes  -m group -a "name=weblogic state=present" 
+
+[root@master-machine ~]# ansible Workernodes  -m group -a "name=weblogic state=present"
+[WARNING]: Platform linux on host 172.31.81.84 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.81.84 | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": true,
+    "gid": 1001,
+    "name": "weblogic",
+    "state": "present",
+    "system": false
+}
+[WARNING]: Platform linux on host 172.31.83.20 is using the discovered Python interpreter at /usr/bin/python, but future
+installation of another Python interpreter could change this. See
+https://docs.ansible.com/ansible/2.9/reference_appendices/interpreter_discovery.html for more information.
+172.31.83.20 | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    },
+    "changed": true,
+    "gid": 1001,
+    "name": "weblogic",
+    "state": "present",
+    "system": false
+}
+
+
+ansible Workernodes -m ping  --user=root
+-------------------------------------------------------------------------------
+
+we need to inform master machine about the details of node_machine1 and node_machine2
+
+host inventory file 
+
+/etc/ansible/hosts
+
+we need to grouping for all the nodes which we want to interact at once
+[groupname]
+node_machine1ip
+node_machine2ip
+
+
+after grouping check the nodes are connecting from master machine 
+
+ansible -m ping Workernodes
+
+-m --- module name 
+ping --- ping module checks connection is established or nodes are responding from master machine 
+nodes --- group name 
+
+ansible is going to push your modules to the nodes using ssh
+
+for windows we need to establish winrm connection like ssh 
+
+module --- module is reusable , standalone script that ansible runs on our behalf locally or remotely
+
+
+from shell script we can copy ssh keys from master to all nodes 
+
+ssh-copy-id username@ip
+
+
+-----------------------
+
+instead of command we need to write playbook
+
+Playbook uses yaml syntax (yet anothet markup language)
+
+
+Playbook for installing java
+
+ cat install_java.yml
+---
+- hosts: nodes
+  tasks:
+    - name: Install java
+      yum:
+        name: java-1.8.0-openjdk-devel
+        state: present
+
+command to check the syntax 
+ansible-playbook --syntax-check install_java.yml
+
+command to run the playbook
+
+ansible-playbook install_java.yml
+
+2.Download maven using ansible
+wget https://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz
+tar -xvf apache-maven-3.8.1-bin.tar.gz
+we have get_url module to download tar.gz format from maven.org
+for extracting tar file we need to use module called unarchive module
+after extracting we need to remove tar file
+any file related operations we need to use file module
+
+[root@master_machine playbook]# cat install_maven.yml
+---
+- hosts: nodes
+  tasks:
+    - name: Install Maven
+      get_url:
+        url: https://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        mode: '0755'
+
+download and extract maven 
+[root@master_machine playbook]# cat  install_maven.yml
+---
+- hosts: nodes
+  tasks:
+    - name: Install Maven
+      get_url:
+        url: https://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        mode: '0755'
+    - name: extract maven
+      unarchive:
+        src: /opt/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        remote_src: True
+
+after extract remove tar file
+[root@master_machine playbook]# cat install_maven.yml
+---
+- hosts: nodes
+  tasks:
+    - name: Install Maven
+      get_url:
+        url: https://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        mode: '0755'
+    - name: extract maven
+      unarchive:
+        src: /opt/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        remote_src: True
+    - name: remove tar file
+      file:
+        path: /opt/apache-maven-3.8.1-bin.tar.gz
+        state: absent
+
+Setting environment varaibles for maven using lineinfile module and command module
+[root@master_machine playbook]# cat install_maven.yml
+---
+- hosts: nodes
+  tasks:
+    - name: Install Maven
+      get_url:
+        url: https://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        mode: '0755'
+    - name: extract maven
+      unarchive:
+        src: /opt/apache-maven-3.8.1-bin.tar.gz
+        dest: /opt
+        remote_src: True
+    - name: remove tar file
+      file:
+        path: /opt/apache-maven-3.8.1-bin.tar.gz
+        state: absent
+    - name: rename maven
+      command: mv /opt/apache-maven-3.8.1 /opt/maven
+    - name: adding the path in the bash rc files
+      lineinfile: dest=/root/.bashrc line='export PATH=$PATH:/opt/maven/bin' insertafter='EOF' regexp='export PATH=\$PATH:/opt/maven/bin' state=present
+    - name: Source the bash rc file
+      shell: source /root/.bashrc
+      remote_user: root
+
+3.Jenkins download  using ansible
+sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat/jenkins.repo
+sudo rpm --import http://pkg.jenkins.io/redhat/jenkins.io.key
+sudo yum install jenkins -y
+
+[root@master_machine playbook]# cat install_jenkins.yml
+---
+-
+  hosts: nodes
+  tasks:
+    - name: Install Jenkins
+      get_url:
+        url: http://pkg.jenkins.io/redhat/jenkins.repo
+        dest: /etc/yum.repos.d
+        mode: '0777'
+
+
+-------------------------
+
+
+ansible is push based configuration tool
+puppet is a pull based configuration tool
+--------------------------------------------
+
+i want to set environment variables for maven
+
+to set the environment variables we need to use a module called lineinfile 
+
+Modules in Ansible
+1.Yum module to install package using yum 
+2.get_url to download tar/zip file from website 
+3.unarchive  ---- to extract the tar/zip file
+4.file --- remove the file/tar
+5.command ---- rename the file/folder
+6.lineinfile ---- set environment variables
+-----------------
+
+can we run soanr using ansible
+can we downlaod jar/war file from maven or nexus or jfrog using ansible
+how to run ansible playbook on multiple os
+node-1 --- rhel
+node-2 --- ubuntu
+how to install os depended task or os based tasks
+
+----------------------------
+
+
+
+
+ 1  ssh-keygen
+    2  cd /root/.ssh
+    3  ll
+    4  cat id_rsa.pub
+    5  clear
+    6  ssh root@172.31.32.201
+    7  ll
+    8  ssh root@172.31.45.218
+    9  ll
+   10  cat known_hosts
+   11  clear
+   12  amazon-linux-extras install ansible2 -y
+   13  clear
+   14  ansible --version
+   15  clear
+   16  ansible -m yum -a'name=java-1.8.0-openjdk java-1.8.0-openjdk-devel state=present' localhost
+   17  cd
+   18  ansible -m yum -a'name=java-1.8.0-openjdk-devel state=present' localhost
+   19  java -version
+   20   clear
+   21* ansible -m yum -a'name=java-1.8.0-openjdk  java-1.8.0-openjdk-devel -y state=present' nodes
+   22  ansible -m yum -a'name=java-1.7.0-openjdk   java-1.7.0-openjdk-devel -y state=present' localhost
+   23  clear
+   24  java -version
+   25  clear
+   26  vi /etc/ansible/hosts
+   27  ansible -m --help
+   28  clear
+   29  ansible -m ping nodes
+   30  clear
+   31  ansible -m yum -a'name=java-1.8.0-openjdk-devel state=present' nodes
+   32  clear
+   33  ansible -m yum -a'name=git  state=present' nodes
+   34  clear
+   35  ansible -m yum -a'name=git  state=absent' nodes
+   36  ansible -m yum -a'name=git  state=latest' nodes
+   37  git --version
+   38  clear
+   39  mkdir playbook
+   40  cd playbook/
+   41  vi install_java.yml
+   42*
+   43  cat install_java.yml
+   44  vi install_java.yml
+   45  ansible-playbook --syntax-check install_java.yml
+   46  ansible-playbook install_java.yml
+   47  clear
+   48  ll
+   49  vi install_maven.yml
+   50  ansible-playbook --syntax-check install_maven.yml
+   51  ansible-playbook install_maven.yml
+   52  clear
+   53  vi install_jenkins.yml
+   54  ansible-playbook --syntax-check install_jenkins.yml
+   55  ansible-playbook  install_jenkins.yml
+   56  vi install_jenkins.yml
+   57  ansible-playbook --syntax-check install_jenkins.yml
+   58  ansible-playbook  install_jenkins.yml
+   59  vi install_jenkins.yml
+   60  ansible-playbook --syntax-check install_jenkins.yml
+   61  vi install_jenkins.yml
+   62  ansible-playbook --syntax-check install_jenkins.yml
+   63  ansible-playbook  install_jenkins.yml
+   64  ll
+   65  cat install_maven.yml
+   66  clear
+   67  cat install install_jenkins.yml
+   68  cat install_jenkins.yml
+   69  ll
+   70  clear
+   71  ll
+   72  vi install_maven.yml
+   73  ansible-playbook  install_maven.yml
+   74  clear
+   75  cat  install_maven.yml
+   76  ll
+   77  clear
+   78  vi install_maven-yml
+   79  vi install_maven.yml
+   80  ansible-playbook  install_maven.yml
+   81  ll
+   82  cat install_maven.yml
+   83  clear
+   84  vi install_maven.yml
+   85  ansible-playbook install_maven.yml
+   86  vi install_maven.yml
+   87  ansible-playbook install_maven.yml
+   88  vi install_maven.yml
+   89  ansible-playbook install_maven.yml
+   90  clear
+   91  cat install_maven.yml
+
+   -------------------------------------------------------
+   
+   
+https://docs.ansible.com/ansible/latest/collections/amazon/aws/ec2_module.html
+https://docs.ansible.com/ansible/latest/collections/community/aws/ec2_instance_module.html
+http://yaml4r.sourceforge.net/doc/page/collections_in_yaml.htm
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html
+https://www.middlewareinventory.com/blog/ansible-sudo-ansible-become-example/
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/unarchive_module.html
+https://docs.ansible.com/ansible/2.3/unarchive_module.html
+https://docs.ansible.com/ansible/2.4/file_module.html
+https://docs.ansible.com/ansible/2.4/command_module.html
+https://docs.ansible.com/ansible/2.3/yum_module.html
+https://docs.ansible.com/ansible/latest/network/getting_started/first_playbook.html
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/get_url_module.html
+https://docs.ansible.com/ansible/latest/reference_appendices/faq.html
+   
+
