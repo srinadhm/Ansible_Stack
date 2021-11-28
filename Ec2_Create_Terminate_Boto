@@ -1,0 +1,201 @@
+Ansible 
+----------
+
+To create Ec2 instance using Ansible playbook we need IAM user or IAM role with EC2FullAccess permissions to access AWS service from Ansible itself.
+
+If we create IAM user configure ACCESS_KEY and SECRET_KEY with aws cli aws configure.Like if we want to create ec2 instance from local machine then we can configure access and secret keys.
+If we create IAM role attach to exising Ec2 instance in which ansible is installed.
+
+For ansible python is mandatory, from python if we want to manage or manipulate aws services we have boto library which have api to create ec2 instances or terminate
+We cant directly install boto first we need to install pip ( python package installer)
+
+Create IAM user and add credentials using aws cli 
+
+[root@ip-172-31-94-5 ~]# aws configure
+AWS Access Key ID [None]: AKIAWED4YLURUAEDTVP6
+AWS Secret Access Key [None]: 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
+Default region name [None]: us-east-1
+Default output format [None]:
+
+Credentials will be stored in below location  (.aws/credentials)
+
+/root/.aws/credentials 
+
+[root@ip-172-31-94-5 .aws]# cat credentials
+[default]
+aws_access_key_id = AKIAWED4YLURUAEDTVP6
+aws_secret_access_key = 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
+
+[root@ip-172-31-94-5 .aws]# cat config
+[default]
+region = us-east-1
+
+2.Click on instance name ---- > Go to Actions ----> Security ---> Modify IAM role ---> ec2-for-ansible-playbook  (AmazonEC2FullAccess)
+
+
+Create ec2 instance using Ansible Playbook
+
+amazon-linux-extras install ansible2 -y
+
+ansible --version
+
+ansible -m ping localhost
+
+yum install python -y
+
+yum install python3-pip -y
+
+pip3 install boto boto3
+
+
+
+
+
+Image will be : Amazon Linux 
+
+[root@ip-172-31-94-5 ~]# cat create-ec2-instance.yml
+---
+- hosts: localhost
+  tasks:
+    - name : create-ec2-instance
+      ec2:
+        key_name: aws-devops
+        instance_type: t2.micro
+        image: ami-04902260ca3d33422
+        wait : yes
+        region: us-east-1
+        group: default
+        count: 1
+        vpc_subnet_id: subnet-2a237f0b
+        assign_public_ip: yes
+      register: ec2
+
+
+key_name: key pair name (pem file name which we used to login to ec2 instance)
+instance_type: t2.micro (type of instance we need to create)
+region: us-east-1 (under which region we can create instance here it will be US East (N. Virginia))
+image: ami-04902260ca3d33422 (for every instance we have ami id for both x86 and arm processor here it will be Amazon Linux) 
+wait : yes (until the instance 2/2 checks passed does not wait for SSH 
+count: 1 (no of instances will be created atleast 1 will be there )
+group: default (security group name )
+vpc_subnet_id: subnet-2a237f0b (subnet id we can mention one of the availability zone id ) 
+assign_public_ip: yes (after instance is created we need to connect to the instance with public Ip address)
+
+
+1.Syntax checking for the playbook
+
+ansible-playbook --syntax-check create-ec2-instance.yml
+
+2.Run the Playbook 
+
+ansible-playbook --syntax-check create-ec2-instance.yml
+
+
+Create Ubuntu instance with variables declaration.
+
+[root@ip-172-31-94-5 ~]# cat create-ubuntu-ec2-instance.yml
+---
+- hosts: localhost
+  vars:
+      region: us-east-1
+      instance_type: t2.nano
+      ami: ami-083654bd07b5da81d  # Ubuntu 20.04 LTS
+      keypair: aws-devops # pem file name
+      subnetid: subnet-2a237f0b
+  tasks:
+    - name : create ec2 instance of ubuntu
+      ec2:
+         key_name: "{{ keypair }}"
+         group: default  # security group name
+         instance_type: "{{ instance_type }}"
+         image: "{{ ami }}"
+         wait: true
+         count: 1
+         region: "{{ region }}"
+         vpc_subnet_id: "{{ subnetid }}"
+         assign_public_ip: yes
+         count_tag:
+            Name: Demo
+         instance_tags:
+            Name: Demo
+
+1.Syntax checking for the playbook
+
+ansible-playbook --syntax-check create-ubuntu-ec2-instance.yml
+
+2.Run the Playbook 
+
+ansible-playbook  create-ubuntu-ec2-instance.yml
+
+#######################
+Policy 
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "ec2:*",
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "elasticloadbalancing:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "cloudwatch:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "autoscaling:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "iam:CreateServiceLinkedRole",
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:AWSServiceName": [
+                        "autoscaling.amazonaws.com",
+                        "ec2scheduled.amazonaws.com",
+                        "elasticloadbalancing.amazonaws.com",
+                        "spot.amazonaws.com",
+                        "spotfleet.amazonaws.com",
+                        "transitgateway.amazonaws.com"
+                    ]
+                }
+            }
+        }
+    ]
+}
+
+
+############################
+Terminate Ec2 instance 
+
+[root@ip-172-31-94-5 ~]# cat terminate-instance-with-tag.yml
+---
+- hosts: localhost
+  vars:
+     - region: 'us-east-1'
+     - ec2_id: 'i-0cc8867484c798691'
+  tasks:
+    - name: Terminate instances
+      local_action: ec2
+        state='absent'
+        instance_ids='{{ ec2_id }}'
+        region='{{ region }}'
+        wait=True
+
+1.Syntax checking for the playbook
+
+ansible-playbook --syntax-check terminate-instance-with-tag.yml
+
+2.Run the Playbook 
+
+ansible-playbook  terminate-instance-with-tag.yml
+
