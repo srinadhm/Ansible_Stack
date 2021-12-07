@@ -493,7 +493,7 @@ ssh-copy-id username@ip
 
 instead of command we need to write playbook
 
-Playbook uses yaml syntax (yet anothet markup language)
+Playbook uses yaml syntax (yet another markup language)
 
 
 Playbook for installing java
