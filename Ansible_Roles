@@ -1,0 +1,114 @@
+What is Ansible Playbook Roles?
+
+The Roles are the tidy way to write playbooks. It permits to store a group
+of actions with the same purpose and to call them in playbooks in a single
+line.
+Roles let you automatically load related vars, files, tasks, handlers, and
+other Ansible artifacts based on a known file structure. After we group
+your content in roles, we can easily reuse them and share them with  other users 
+
+
+tasks/main.yml - the main list of tasks that the role executes.
+handlers/main.yml - handlers, which may be used within or outside this role.
+library/my_module.py - modules, which may be used within this role (see
+Embedding modules and plugins in roles for more information).
+defaults/main.yml - default variables for the role. These variables have the
+lowest priority of any variables available and can be easily overridden by any
+other variable, including inventory variables.
+vars/main.yml - other variables for the role
+files/main.yml - files that the role deploys.
+templates/main.yml - templates that the role deploys.
+meta/main.yml - metadata for the role, including role dependencies.
+
+Ansible roles directory can be created under /etc/ansible/roles
+
+[root@ip-172-31-92-71 roles]# tree
+.
+└── apache
+    ├── default
+    ├── handlers
+    ├── php-server
+    │   ├── handlers
+    │   │   └── main.yml
+    │   ├── php-server-role-playbook
+    │   └── tasks
+    │       ├── main.yml
+    │       └── php-server-role-playbook.yml
+    ├── tasks
+    │   ├── apache-role-playbook.yml
+    │   └── main.yml
+    ├── template
+    └── vars
+
+
+
+[root@ip-172-31-92-71 apache]# cd tasks
+[root@ip-172-31-92-71 tasks]# ll
+total 8
+-rw-r--r-- 1 root root  72 Dec  7 13:09 apache-role-playbook.yml
+-rw-r--r-- 1 root root 184 Dec  7 12:59 main.yml
+[root@ip-172-31-92-71 tasks]# cat main.yml
+---
+#tasks for install apache
+- name: install apache
+  yum: name=httpd state=latest
+- name : enable and start service
+  service:
+    name: httpd
+    enabled: yes
+    state: started
+
+[root@ip-172-31-92-71 tasks]# cat apache-role-playbook.yml
+---
+- hosts: localhost
+  user: root
+  become: yes
+  roles:
+    - apache
+
+---------------------------------
+
+
+[root@ip-172-31-92-71 tasks]# cd ..
+[root@ip-172-31-92-71 apache]# cd php-server/
+[root@ip-172-31-92-71 php-server]# cd tasks
+[root@ip-172-31-92-71 tasks]# ll
+total 8
+-rw-r--r-- 1 root root 180 Dec  7 13:24 main.yml
+-rw-r--r-- 1 root root  97 Dec  7 13:59 php-server-role-playbook.yml
+[root@ip-172-31-92-71 tasks]# cat main.yml
+---
+# task file for php-server
+- name: install php
+  yum: name={{item}} state=latest
+  with_items:
+    - php
+    - php-gd
+    - php-pear
+    - php-mysql
+  notify: restart httpd
+
+[root@ip-172-31-92-71 tasks]# cat php-server-role-playbook.yml
+---
+- hosts: localhost
+  user: root
+  become: yes
+  roles:
+    - apache
+    - apache/php-server
+
+--------------
+
+[root@ip-172-31-92-71 tasks]# cd ..
+[root@ip-172-31-92-71 php-server]# cd handlers/
+[root@ip-172-31-92-71 handlers]# ll
+total 4
+-rw-r--r-- 1 root root 91 Dec  7 13:28 main.yml
+[root@ip-172-31-92-71 handlers]# cat main.yml
+---
+# handler for web server
+- name: restart apache
+  service: name=httpd state=restarted
+
+
+
