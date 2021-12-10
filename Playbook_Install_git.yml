@@ -8,3 +8,20 @@
         name: git
         state: present
 
+---
+- hosts: localhost
+  tasks:
+    - name: Install git
+      yum:
+        name: git
+        state: present
+      tags: install
+    - name: Uninstall git
+      yum:
+        name: git
+        state: absent
+      tags: unistall
+
+ansible-playbook install_git.yml --skip-tags "unistall"
+
+ansible-playbook install_git.yml --tags "unistall,install"
