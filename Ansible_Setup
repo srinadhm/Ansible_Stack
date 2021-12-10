@@ -515,7 +515,7 @@ command to run the playbook
 ansible-playbook install_java.yml
 
 2.Download maven using ansible
-wget https://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz
+wget https://downloads.apache.org/maven/binaries/apache-maven-3.0.5-bin.tar.gz
 tar -xvf apache-maven-3.8.1-bin.tar.gz
 we have get_url module to download tar.gz format from maven.org
 for extracting tar file we need to use module called unarchive module
