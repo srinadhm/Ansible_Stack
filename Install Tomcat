@@ -12,6 +12,7 @@ yum list java-1.8.0-openjdk-devel -y ---> will check package is available or not
 java -version ---> java version if it shows version java is installed , if it shows command not found java is not installed 
 
 Inorder to store/declare values in variable we can use register module.
+Ansible register is a way to capture the output from task execution and store it in a variable.
 To print variable values we can use debug module
 selectattr --- retreive attribute values from list and check the exact match from the generated output 
 when ---- used for condition checking 
