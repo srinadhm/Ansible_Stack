@@ -11,9 +11,9 @@ how to check java is installed already or not?
 yum list java-1.8.0-openjdk-devel -y ---> will check package is available or not
 java -version ---> java version if it shows version java is installed , if it shows command not found java is not installed 
 
-Inorder to store/declare variable we can use register module
+Inorder to store/declare values in variable we can use register module.
 To print variable values we can use debug module
-selectattr --- to check the attribute values based on the generated output
+selectattr --- retreive attribute values from list and check the exact match from the generated output 
 when ---- used for condition checking 
 
 Playbook to check java is installed or not if not download based on output
