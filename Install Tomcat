@@ -1,0 +1,37 @@
+Install tomcat and run as a service 
+1.we need to install java if it is not there
+2.we need to install tomcat if it is not there
+3.we need to create a user called tomcat
+4.we need to change ownership of tomcat directory to tomcat user
+5.we need to create service file under /etc/system.d
+6.reload the system using system daemon reload
+7.start the tomcat service
+
+how to check java is installed already or not?
+yum list java-1.8.0-openjdk-devel -y ---> will check package is available or not
+java -version ---> java version if it shows version java is installed , if it shows command not found java is not installed 
+
+Inorder to store/declare variable we can use register module
+To print variable values we can use debug module
+selectattr --- to check the attribute values based on the generated output
+when ---- used for condition checking 
+
+Playbook to check java is installed or not if not download based on output
+
+---
+- hosts: localhost
+  tasks:
+    - name: check java is installed or not
+      yum:
+        list: java-1.8.0-openjdk-devel
+      register: java_output
+    - name: print java_output
+      debug:
+        msg: "  {{ java_output }} "
+    - name : install java
+      yum:
+        name : java-1.8.0-openjdk-devel
+        state: latest
+      when: java_output.results | selectattr("yumstate", "match", "installed") | list | length==0
+
+
