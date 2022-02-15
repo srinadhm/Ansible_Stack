@@ -66,24 +66,37 @@ ok: [localhost] => {
     
 }
 
-Ansible Playbook to download if it is not installed based on output
+Ansible Playbook to download if it is not installed based on output and extract tar file
+
+
 
 ---
 - hosts: localhost
   vars:
     tomcat_download_url: https://downloads.apache.org/tomcat/tomcat-10/v10.0.16/bin/apache-tomcat-10.0.16.tar.gz
   tasks:
-    - name : check tomcat folder already exists or not
+   - name : check tomcat folder already exists or not
       stat:
         path: /opt/apache-tomcat-10.0.16
       register: tomcat_output
+    - name: print tomcat output
+      debug:
+        msg: " {{ tomcat_output  }}  "
     - name: download tomcat if it is not downloaded
       get_url:
         url: " {{ tomcat_download_url }} "
         dest: /opt
         mode: 0755
       when: not tomcat_output.stat.exists
-      
+    - name: extract tomcat folder
+      unarchive:
+        src: /opt/apache-tomcat-10.0.16.tar.gz
+        dest: /opt
+        remote_src: True
+    - name: print tomcat output
+      debug:
+        msg: " {{ tomcat_output  }}  "
+
     
 
 
