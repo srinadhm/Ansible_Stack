@@ -3,7 +3,7 @@ Install tomcat and run as a service
 2.we need to install tomcat if it is not there
 3.we need to create a user called tomcat
 4.we need to change ownership of tomcat directory to tomcat user
-5.we need to create service file under /etc/system.d
+5.we need to create service file under /etc/systemd/system/tomcat10.service
 6.reload the system using system daemon reload
 7.start the tomcat service
 
@@ -97,6 +97,30 @@ Ansible Playbook to download if it is not installed based on output and extract 
       debug:
         msg: " {{ tomcat_output  }}  "
 
-    
+Create tomcat user and change ownership
+  
+  - name: create tomcat user
+      user:
+        name: tomcat10
+        shell: /bin/bash
+    - name: change tomcat directory ownership to tomcat10 user
+      file:
+        path: /opt/apache-tomcat-10.0.16
+        owner: tomcat10
+        group: tomcat10
+        state: directory
+        recurse: yes
+
+Create tomcat service and change ownership to tomcat10
+
+- name: create tomcat service file
+      file:
+        path: /etc/systemd/system/tomcat10.service
+        state: touch
+    - name: change service file ownership to tomcat10
+      file:
+        path : /etc/systemd/system/tomcat10.service
+        owner: tomcat10
+        group: tomcat10
 
 
