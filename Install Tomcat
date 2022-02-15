@@ -35,4 +35,55 @@ Playbook to check java is installed or not if not download based on output
         state: latest
       when: java_output.results | selectattr("yumstate", "match", "installed") | list | length==0
 
+Output :
+
+ {u'envra': u'1:java-1.8.0-openjdk-devel-1.8.0.312.b07-1.amzn2.0.1.x86_64', u'name': u'java-1.8.0-openjdk-devel', u'repo': u'amzn2-core', 
+ u'epoch': u'1', u'version': u'1.8.0.312.b07', u'release': u'1.amzn2.0.1', u'yumstate': u'available', u'arch': u'x86_64'}
+ 
+ After condition based on selectattr 
+ 
+  {u'envra': u'1:java-1.8.0-openjdk-devel-1.8.0.312.b07-1.amzn2.0.2.x86_64', u'name': u'java-1.8.0-openjdk-devel', u'repo': u'installed', 
+  u'epoch': u'1', u'version': u'1.8.0.312.b07', u'release': u'1.amzn2.0.2', u'yumstate': u'installed', u'arch': u'x86_64'}]}
+
+Playbook to check tomcat folder already exists or not
+
+
+---
+- hosts: localhost
+  tasks:
+    - name : check tomcat folder already exists or not
+      stat:
+        path: /opt/apache-tomcat-10.0.7
+      register: tomcat_output
+    - name: print tomcat output
+      debug:
+        msg: " {{ tomcat_output }} "
+
+Output :
+
+ok: [localhost] => {
+    "msg": " {'failed': False, u'stat': {u'exists': False}, u'changed': False} " ----> stat exists false means tomcat is not present in /opt directory
+    
+}
+
+Ansible Playbook to download if it is not installed based on output
+
+---
+- hosts: localhost
+  vars:
+    tomcat_download_url: https://downloads.apache.org/tomcat/tomcat-10/v10.0.16/bin/apache-tomcat-10.0.16.tar.gz
+  tasks:
+    - name : check tomcat folder already exists or not
+      stat:
+        path: /opt/apache-tomcat-10.0.16
+      register: tomcat_output
+    - name: download tomcat if it is not downloaded
+      get_url:
+        url: " {{ tomcat_download_url }} "
+        dest: /opt
+        mode: 0755
+      when: not tomcat_output.stat.exists
+      
+    
+
 
