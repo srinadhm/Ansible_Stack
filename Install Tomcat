@@ -17,7 +17,7 @@ To print variable values we can use debug module
 selectattr --- retreive attribute values from list and check the exact match from the generated output 
 when ---- used for condition checking 
 
-Playbook to check java is installed or not if not download based on output
+1.Playbook to check java is installed or not if not download based on output
 
 ---
 - hosts: localhost
@@ -66,9 +66,7 @@ ok: [localhost] => {
     
 }
 
-Ansible Playbook to download if it is not installed based on output and extract tar file
-
-
+2.Ansible Playbook to download if it is not installed based on output and extract tar file
 
 ---
 - hosts: localhost
@@ -97,7 +95,7 @@ Ansible Playbook to download if it is not installed based on output and extract 
       debug:
         msg: " {{ tomcat_output  }}  "
 
-Create tomcat user and change ownership
+3.Create tomcat user and change ownership to tomcat10
   
   - name: create tomcat user
       user:
@@ -111,7 +109,7 @@ Create tomcat user and change ownership
         state: directory
         recurse: yes
 
-Create tomcat service and change ownership to tomcat10
+4.Create tomcat service and change ownership to tomcat10
 
 - name: create tomcat service file
       file:
@@ -123,4 +121,89 @@ Create tomcat service and change ownership to tomcat10
         owner: tomcat10
         group: tomcat10
 
+5,6.Create service file content in jinja2 template passed the content to tomcat10 service file dynamically and reload the system service 
 
+- name: use template to create service file content dynamically
+      template:
+        src: /root/ansibleplaybooks/tomcat10.service.j2
+        dest: /etc/systemd/system/tomcat10.service
+    - name: just force systemd to reread configs (2.4 and above)
+      systemd:
+        daemon_reload: yes
+7.Start the tomcat service 
+
+- name: enable tomcat startup
+      service:
+        name: tomcat10
+        state: restarted
+
+Ansible Playbook to start the tomcat service 
+
+---
+- hosts: localhost
+  vars:
+    tomcat_download_directory: /opt
+    tomcat_download_url: https://downloads.apache.org/tomcat/tomcat-10/v10.0.16/bin/apache-tomcat-10.0.16.tar.gz
+  tasks:
+    - name: check java is installed or not
+      yum:
+        list: java-1.8.0-openjdk-devel
+      register: java_output
+    - name: print java_output
+      debug:
+        msg: "  {{ java_output }} "
+    - name : install java
+      yum:
+        name : java-1.8.0-openjdk-devel
+        state: latest
+      when: java_output.results | selectattr("yumstate", "match", "installed") | list | length==0
+    - name : check tomcat folder already exists or not
+      stat:
+        path: /opt/apache-tomcat-10.0.16
+      register: tomcat_output
+    - name: print tomcat output
+      debug:
+        msg: " {{ tomcat_output  }}  "
+    - name: download tomcat if it is not downloaded
+      get_url:
+        url: " {{ tomcat_download_url }} "
+        dest: /opt
+        mode: 0755
+      when: not tomcat_output.stat.exists
+    - name: extract tomcat folder
+      unarchive:
+        src: /opt/apache-tomcat-10.0.16.tar.gz
+        dest: /opt
+        remote_src: True
+    - name: create tomcat user
+      user:
+        name: tomcat10
+        shell: /bin/bash
+    - name: change tomcat directory ownership to tomcat10 user
+      file:
+        path: /opt/apache-tomcat-10.0.16
+        owner: tomcat10
+        group: tomcat10
+        state: directory
+        recurse: yes
+    - name: create tomcat service file
+      file:
+        path: /etc/systemd/system/tomcat10.service
+        state: touch
+    - name: change service file ownership to tomcat10
+      file:
+        path : /etc/systemd/system/tomcat10.service
+        owner: tomcat10
+        group: tomcat10
+    - name: use template to create service file content dynamically
+      template:
+        src: /root/ansibleplaybooks/tomcat10.service.j2
+        dest: /etc/systemd/system/tomcat10.service
+    - name: just force systemd to reread configs (2.4 and above)
+      systemd:
+        daemon_reload: yes
+    - name: enable tomcat startup
+      service:
+        name: tomcat10
+        state: restarted
+     
