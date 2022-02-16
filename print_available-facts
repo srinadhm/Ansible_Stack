@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  tasks:
+    - name: install java 8 package
+      yum:
+        name: java-1.8.0-openjdk-devel
+        state: present
+    - name: install git
+      yum:
+        name: git
+        state: present
+    - name: print all available facts
+      debug:
+        var: ansible_facts
+
+
