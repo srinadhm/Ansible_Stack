@@ -1,0 +1,17 @@
+---
+- hosts: remotenodes
+  tasks:
+    - name: install git on redhat machine
+      yum:
+        name: git
+        state: latest
+      when: ansible_os_family == "RedHat"
+    - name: Update APT package manager repositories cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+    - name: Install git
+      apt:
+        name: git
+        state: present
+      when: ansible_os_family == "Debian"
