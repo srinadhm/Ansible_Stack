@@ -1,1 +1,76 @@
+Ansible Playbook to install softwares in different os within same playbook using Ansible facts.
+Ansible Playbook to print all available facts to install packages based on os dependent 
+---
+- hosts: localhost
+  tasks:
+    - name: install java 8 package
+      yum:
+        name: java-1.8.0-openjdk-devel
+        state: present
+    - name: install git
+      yum:
+        name: git
+        state: present
+    - name: print all available facts
+      debug:
+        var: ansible_facts
+Adding node entries in ansible host file 
+vi /etc/ansible/hosts
+[remotenodes]
+172.31.92.221
+172.31.90.96
+[rhelnode]
+172.31.92.221
+[ubuntunode]
+172.31.90.96
+Ansible Playbook to print redhat facts
+---
+- hosts: rhelnode
+  tasks:
+    - name : print all available facts
+      debug:
+        var: ansible_facts
+Ansible Playbook to print ubuntu facts
+---
+- hosts: ubuntunode
+  tasks:
+    - name: print all available facts
+      debug:
+        var: ansible_facts
+Ansible Playbook to install packages based on ansible facts os distribution
+---
+- hosts: remotenodes
+  tasks:
+    - name: install java on redhat machine
+      yum:
+        name: java-1.8.0-openjdk-devel
+        state: present
+      when: ansible_distribution == "RedHat"
+    - name: Update APT package manager repositories cache
+      apt:
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+    - name:  Install OpenJDK Java
+      apt:
+        name: openjdk-8-jdk
+        state: latest
+      when: ansible_distribution == "Ubuntu"
+Ansible Playbook to install packages based on ansible facts os family
+---
+- hosts: remotenodes
+  tasks:
+    - name: install git on redhat machine
+      yum:
+        name: git
+        state: latest
+      when: ansible_os_family == "RedHat"
+    - name: Update APT package manager repositories cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+    - name: Install git
+      apt:
+        name: git
+        state: present
+      when: ansible_os_family == "Debian"
 
