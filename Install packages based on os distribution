@@ -1,0 +1,17 @@
+---
+- hosts: remotenodes
+  tasks:
+    - name: install java on redhat machine
+      yum:
+        name: java-1.8.0-openjdk-devel
+        state: present
+      when: ansible_distribution == "RedHat"
+    - name: Update APT package manager repositories cache
+      apt:
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+    - name:  Install OpenJDK Java
+      apt:
+        name: openjdk-8-jdk
+        state: latest
+      when: ansible_distribution == "Ubuntu"
