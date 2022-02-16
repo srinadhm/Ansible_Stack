@@ -1,14 +1,20 @@
 How to download jar file from maven repository using Ansible adhoc commands or playbook using get_url module
+
 ansible -m get_url -a 'url=https://repo1.maven.org/maven2/org/postgresql/postgresql/42.3.0/postgresql-42.3.0.jar dest=/opt mode=0755' localhost
 How to remove file/directory  using ansible adhoc command
+
 ansible -m file -a 'path=/opt/postgresql-42.3.0.jar state=absent' localhost
 How to download jar file from maven repository using Ansible adhoc commands or playbook using maven_artifact module
+
 Note: For Continuous delivery we need to download jar from nexus repository
 Prerequisite to use maven_artifact module lxml package has to be downloaded from pip 
 pip is install from python
 yum install python2-pip -y
 pip install lxml
+
 ansible -m maven_artifact -a 'group_id=org.postgresql artifact_id=postgresql version=42.3.3 dest=/opt repository_url=https://repo1.maven.org/maven2' localhost
+
+Output:
 localhost | CHANGED => {
     "artifact_id": "postgresql",
     "changed": true,
